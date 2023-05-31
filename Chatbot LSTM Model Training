@@ -1,0 +1,155 @@
+'''
+This code is a learning process for a chatbot model based on LSTM networks. It uses various components and functions from the TensorFlow library,
+such as Dense, Conv1D, MaxPool1D, GlobalMaxPooling1D, LSTM, GRU, Bidirectional, Embedding, Input, Sequential, Model and others. The code also uses 
+text preprocessing functions such as Tokenizer and pad_sequences, as well as functions for visualizing the model and metrics.
+At the beginning of the code, the necessary libraries and modules are imported, then the Google Drive is mounted. Next, a text file with chat data is 
+read, pre-processed and divided into questions and answers. To prepare the data, a Tokenizer object is used to tokenize and convert text into sequences 
+of numbers, and then the sequences are padded to a given length.
+Next, the architecture and parameters of the LSTM model are defined. Model inputs are represented as an encoder and decoder, as well as their embeddings. 
+The LSTM layers are used to extract information from the sequences, and the dense layer is used to obtain the probability distribution of the words in the response. 
+The model is then compiled with the RMSprop optimizer and the categorical_crossentropy loss function.
+Next, the code defines the MyCallback class, which is a custom callback to control the training process and save the model's best weights. 
+The ReduceLROnPlateau function is also used to dynamically reduce the learning rate in the absence of improvements.
+Finally, the model is trained on the input data and information about the progress of the training is displayed.
+The general context of the code is related to processing text data, preparing data for the model, defining and compiling the LSTM model, callback for training control, and monitoring training metrics.
+'''
+from tensorflow.keras.layers import Dense, Conv1D, MaxPool1D, GlobalMaxPooling1D, LSTM, GRU, Bidirectional, Embedding, Input
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical, plot_model
+from tensorflow.keras.optimizers import RMSprop, Adam
+from os import listdir as list_dir
+from sklearn.model_selection import train_test_split
+
+import pandas as pd
+import numpy as np
+import tensorflow.keras.utils as utils 
+import matplotlib.pyplot as plt
+import re
+import pymorphy2
+
+from google.colab import drive
+drive.mount('/content/drive')
+with open('/content/drive/MyDrive/База для чат-ботов/1200.txt', 'r') as f:
+  text = f.read()
+  text = text.replace('\ufeff', '')  
+  text = re.sub(r'[^А-я\n]', ' ', text)
+  text = ' '.join(text.split())
+import re
+questions = list() 
+answers = list() 
+max_question_len = 500
+max_answer_len = 500
+corpus = open('/content/drive/MyDrive/База для чат-ботов/1200.txt', 'r') 
+lastPerson = ''
+for line in corpus.readlines():
+  line = line.strip()
+  phrase = line[len('Person_1: ') : len(line)]
+  if type(phrase) != str:                             
+    continue  
+  if line.startswith('Person_2:'): 
+    if (lastPerson == 'Person_2'):                     
+      if (len(questions[-1]) + len(phrase) < max_question_len):
+        questions[-1] += " " + phrase                    
+    else:  
+      questions.append(phrase)
+    lastPerson = 'Person_2'
+  if line.startswith('Person_1:'):
+    if (lastPerson == 'Person_1'):                      
+      if (len(answers[-1]) + len(phrase) < max_answer_len):
+        answers[-1] += " " + phrase                      
+    else:
+      if (len(answers) > 0):
+        answers[-1] += " <END>"                        
+      answers.append('<START> ' + phrase)               
+    lastPerson = 'Person_1'
+questions = questions[:1000]    
+answers = answers[:1000]
+num_words = corpus
+tokenizer = Tokenizer(num_words=None)
+tokenizer.fit_on_texts(questions + answers) 
+vocabularyItems = list(tokenizer.word_index.items()) 
+vocabularySize = len(vocabularyItems)+1 
+print( 'Фрагмент словаря : {}'.format(vocabularyItems[:100]))
+print( 'Размер словаря : {}'.format(vocabularySize))
+def prepareDataForNN(phrases, isQuestion = True):
+  tokenizedPhrases = tokenizer.texts_to_sequences(phrase) 
+  maxLenPhrases = max([ len(x) for x in tokenizedPhrases]) 
+  paddedPhrases = pad_sequences(tokenizedPhrases, maxlen=maxLenPhrases, padding='post')
+  encoded = np.array(paddedPhrases)
+  phraseType = "вопрос"
+  if not isQuestion:
+    phraseType = "ответ"    
+  print('Пример оригинального ' + phraseType + 'а на вход : {}'.format(phrase[:5])) 
+  print('Пример кодированного ' + phraseType + 'а на вход : {}'.format(encoded[:5])) 
+  print('Размеры закодированного массива ' + phraseType + 'ов на вход : {}'.format(encoded.shape)) 
+  print('Установленная длина ' + phraseType + 'ов на вход : {}'.format(maxLenPhrases)) 
+
+  return encoded, maxLenPhrases
+encoderForInput, maxLenQuestions = prepareDataForNN(questions, True)
+def prepareDataForNN(phrases, isQuestion = True):
+  tokenizedPhrases = tokenizer.texts_to_sequences(phrase) 
+  maxLenPhrases = max([ len(x) for x in tokenizedPhrases]) 
+  paddedPhrases = pad_sequences(tokenizedPhrases, maxlen=maxLenPhrases, padding='post')
+  encoded = np.array(paddedPhrases) 
+  phraseType = "вопрос"
+  if not isQuestion:
+    phraseType = "ответ"    
+  print('Пример оригинального ' + phraseType + 'а на вход : {}'.format(phrase[:7])) 
+  print('Пример кодированного ' + phraseType + 'а на вход : {}'.format(encoded[:7])) 
+  print('Размеры закодированного массива ' + phraseType + 'ов на вход : {}'.format(encoded.shape)) 
+  print('Установленная длина ' + phraseType + 'ов на вход : {}'.format(maxLenPhrases)) 
+  return encoded, maxLenPhrases
+encoderForInput, maxLenQuestions = prepareDataForNN(questions, True)
+decoderForInput, maxLenAnswers = prepareDataForNN(answers, False)
+from tensorflow.keras.utils import to_categorical, plot_model
+print("Answers:", len(answers))
+tokenizedAnswers = tokenizer.texts_to_sequences(answers) 
+print("tokenizedAnswers:", len(tokenizedAnswers))
+for i in range(len(tokenizedAnswers)) : 
+  tokenizedAnswers[i] = tokenizedAnswers[i][1:]
+paddedAnswers = pad_sequences(tokenizedAnswers, maxlen=maxLenAnswers , padding='post')
+print("paddedAnswers:", len(paddedAnswers))
+print("vocabularySize:", vocabularySize)
+oneHotAnswers = utils.to_categorical(paddedAnswers, vocabularySize)
+decoderForOutput = np.array(oneHotAnswers) 
+encoderInputs = Input(shape=(7, ), name = "EncoderForInput") 
+encoderEmbedding = Embedding(vocabularySize, 200 , mask_zero=True, name = "Encoder_Embedding") (encoderInputs)
+encoderOutputs, state_h , state_c = LSTM(200, return_state=True, name = "Encoder_LSTM")(encoderEmbedding)
+encoderStates = [state_h, state_c]
+decoderInputs = Input(shape=(7, ), name = "DecoderForInput") 
+decoderEmbedding = Embedding(vocabularySize, 200, mask_zero=True, name = "Decoder_Embedding") (decoderInputs) 
+decoderLSTM = LSTM(200, return_state=True, return_sequences=True, name = "Decoder_LSTM")
+decoderOutputs , _ , _ = decoderLSTM (decoderEmbedding, initial_state=encoderStates)
+decoderDense = Dense(vocabularySize, activation='softmax') 
+output = decoderDense (decoderOutputs)
+model = Model([encoderInputs, decoderInputs], output)
+model.compile(optimizer=RMSprop(), loss='categorical_crossentropy')
+print(model.summary()) 
+plot_model(model, to_file='model.png') 
+import keras
+import sys
+import time
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+class MyCallback(keras.callbacks.Callback):
+  def __init__(self):
+    super().__init__()
+    self.best_criterion = sys.float_info.max
+    self.counter = 0
+    self.interval = 5 
+    self.best_weights_filename = "best_weights_chatbot_150_epochs.h5"
+    print(self.best_weights_filename)
+  def on_epoch_begin(self, epoch, logs={}):
+    self.epoch_time_start = time.time()  
+  def on_epoch_end(self, epoch, logs=None):
+    criterion = 'loss'
+    if (logs[criterion] < self.best_criterion): 
+      print("\r\nНайдено лучшее значение " + criterion + ". Было", self.best_criterion, "Стало:", logs[criterion], "Сохраняю файл весов. Итерация:", self.counter, "\r\n")
+      self.model.save_weights(self.best_weights_filename)     
+      if ((self.counter % self.interval) == 0):
+        print("Сохраняю файл весов на ftp.")
+      self.best_criterion = logs[criterion] 
+    self.counter += 1  
+reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.2, verbose=1, patience=5, min_lr=1e-12)
+model.fit([encoderForInput , decoderForInput], decoderForOutput, batch_size=50, epochs=50, callbacks=[MyCallback(), reduce_lr]) 
