@@ -29,7 +29,7 @@ from tensorflow.keras.utils import plot_model # удобный график дл
 import yaml # импортируем модуль для удобной работы с файлами
 from google.colab import drive
 drive.mount('/content/drive')
-corpus = open('/content/drive/MyDrive/Диалоги(рассказы)_censored.yml', 'r') 
+corpus = open('pass', 'r') 
 document = yaml.safe_load(corpus) 
 conversations = document['разговоры'] 
 print('Количество пар вопрос-ответ : {}'.format(len(conversations)))
