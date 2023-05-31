@@ -1,4 +1,4 @@
-# VoiceToText
+# Ai projects 
 This project is called "VoiceToText" and is a program that converts speech recorded with a microphone into text. The program works only in Russian, but can be adapted for other languages.
 
 The following libraries and tools are used to implement the project:
