@@ -1,0 +1,174 @@
+# VoiceToText
+Changes voice speech to text (It works only in Russian, but can be changed to other languages)
+%tensorflow_version 1.x
+!pip install SpeechRecognition # library with popular speech recognition services
+import speech_recognition as sR
+!pip install jiwer 
+from jiwer import wer # quality metric module in speech recognition
+import numpy as np # library for working with data arrays
+from matplotlib import pyplot as plt # interface for graphing simple functions
+from IPython.display import HTML, Audio # load the module to access the HTML for recording audio from the microphone in the laptop
+from google.colab import files # module for uploading files
+from google.colab.output import eval_js
+from base64 import b64decode #audio encoding/decoding module (64-bit code)
+from scipy.io.wavfile import read as wav_read # to read WAV format
+import io
+import scipy # use the library modules to work with the audio track
+import librosa # to parameterize audio
+import os # module for working with the operating system (we will use the methods of working with directories)
+from sklearn.model_selection import train_test_split # module for splitting data into training and test sets
+from keras.utils import to_categorical # load keras utilities for one hot encoding
+from tqdm import tqdm #fast, convenient progress bar for Python
+from keras.optimizers import Adam, RMSprop, Adadelta # load learning/optimization algorithms
+from keras.models import Sequential # sequential keras neural network model
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, BatchNormalization # loading the necessary layers for the neural network
+import IPython.display as ipd #To play audio
+!pip install ffmpeg-python
+import ffmpeg
+from google.colab import drive
+drive.mount('/content/drive')
+def recognizeAudio(filename, duration=None):
+  AUDIO_FILE = os.path.join(filename) 
+  r = sR.Recognizer() 
+  with sR.AudioFile(AUDIO_FILE) as source:
+    audio = r.record(source, duration=duration) 
+  return r.recognize_google(audio, language='ru') 
+  team_path_uvarova = 'ur pass
+  ipd.display(ipd.Audio('ur pass'))
+  original = 'где мы встретимся'
+res = recognizeAudio(team_path_uvarova, duration=120)
+print('Оригинал:               ', original)
+print('Результат распознавания:', res)
+print('WER:', wer(original.lower(), res.lower()))
+AUDIO_HTML = """
+<script>  // create a <script> tag that tells the browser that executable JavaScript code is inside
+var my_div = document.createElement("DIV");  // create a new DIV element (container tag for logical selection of the document block)
+var my_p = document.createElement("P");  // create a new element P(paragraph for logical grouping of text)
+var my_btn = document.createElement("BUTTON");  // create a new element (button) BUTTON
+var t = document.createTextNode("Press to start recording"); // create text content for the button
+
+my_btn.appendChild(t);  // add text content to the BUTTON element
+my_div.appendChild(my_btn);  // add a button with the text BUTTON to the DIV block
+document.body.appendChild(my_div);  // add our block to the <body>("body", to store the content of the web page) element
+
+var base64data = 0;  // we will use the method of encoding information into a 64-bit code for audio data
+var reader;  // create a variable to read the file
+var recorder, gumStream;// declare variables for writing data/stream
+var recordButton = my_btn;// create a variable for the button to record audio from the microphone
+
+var handleSuccess = function(stream) {  // declare a function for working with data streams
+  gumStream = stream;  // create a variable for the thread
+  var options = {
+    mimeType : 'audio/webm;codecs=opus' // in options set media type with audio format and codecs
+  };            
+  recorder = new MediaRecorder(stream); // create a new MediaRecorder object that receives the media stream to record.
+   // MediaRecorder is a MediaStream Recording API providing functionality for simple media recording. Created..
+   // ..using the MediaRecorder() constructor.
+   recorder.ondataavailable = function(e) { // call the dataavailable event handler fired when recording is complete
+     var url = URL.createObjectURL(e.data); // this method creates a DOMString(UTF-16 String) containing a URL pointing to the e.data object
+     var preview = document.createElement('audio'); // create an audio tag element
+     preview.controls = true; // activate controls
+     preview.src = url; // take as source data the file contained in the previously recorded URL
+     document.body.appendChild(preview); //add an audio element to <body>("body", to hold the content of the web page)
+
+     reader = new FileReader(); // create an object of the FileReader class to read different data sources
+     reader.readAsDataURL(e.data); // read the contents of the specified file
+     reader.onloadend = function() { // event handler fired after data transfer
+       base64data = reader.result; // write read content to base64data
+     }
+   };
+   recorder.start(); // start recording media
+   };
+
+recordButton.innerText = "Recording... click to stop"; // this text will be on the button BUTTON during audio recording
+
+// request user permission to access the audio capture device (microphone), set to True
+navigator.mediaDevices.getUserMedia({audio: true}).then(handleSuccess);
+
+
+function toggleRecording() { // the function will describe the actions to complete the recording (after clicking the "Recording... press to stop" button with the mouse)
+   if (recorder && recorder.state == "recording") { // if the recorder is in the process of recording
+       recorder.stop(); // recorder aborts
+       gumStream.getAudioTracks()[0].stop(); // disable recording and microphone access
+       recordButton.innerText = "Saving the recording... pls wait!" // this inscription (save record) will be displayed on the button BUTTON
+   }
+}
+
+//https://stackoverflow.com/a/951057
+function sleep(ms) { // create a function with call delay
+   return new Promise(resolve => setTimeout(resolve, ms));
+   // new Promise - construct for lazy evaluation
+   // setTimeout allows you to call the function once after a certain time interval
+}
+
+var data = new Promise(resolve=>{
+recordButton.onclick = ()=>{ // when left clicking on the "Recording... press to stop" button
+toggleRecording() // calls the end audio recording function
+
+sleep(2000).then(() => { // and after a delay of 2000ms(2 sec)
+   resolve(base64data.toString()) // convert received data from base64 format to string
+
+});
+
+}
+});
+      
+</script>
+"""
+
+def get_audio(): # declare a function to extract audio recorded through a microphone in a laptop
+  display(HTML(AUDIO_HTML)) # using the modules of the IPython library, display the result of executing the AUDIO_HTML script written above
+  data = eval_js("data") # write output data to data as a result of executing javascript code
+ # data now looks like this: 'data:audio/webm;codecs=opus;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQRChYE...mpZpkq1'
+  binary = b64decode(data.split(',')[1]) #cut off the information "data:audio/webm;codecs=opus;base64", leave only the data and decode
+   # b'\x1aE\xdf\xa3\x9fB\x86\x81\x01B\xf7\x81\x01B\xf2
+
+  process = (ffmpeg
+    .input('pipe:0') # standard input stream
+    .output('pipe:1', format='wav') # standard output in wav format 
+    .run_async(pipe_stdin=True, pipe_stdout=True, pipe_stderr=True, quiet=True, overwrite_output=True)) # asynchronous execution of the FFmpeg command line
+   # convert binary to wav, with typical media file format RIFF(ResourceInterchangeFileFormat - file format for resource exchange)
+  output, err = process.communicate(input=binary)
+  # output - b'RIFF\xff\xff\xff\xffWAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x80\xbb\x00\x00\...\x01\x00\x01\x00\x01\x0\xff'
+  # err - b"ffmpeg version 3.4.6-0ubuntu0.18.04.1 Copyright (c) 2000-2019 the FFmpeg developers\n...headers:0kB muxing overhead: 0.046695%\n"
+
+
+'''
+    The contents of the file are grouped from separate sections (chunks) - the format of the samples of audio data. A section has its own header and section data.
+    The size of the RIFF section header is 8 bytes, we will remove them below from the definition of the RIFF section size
+'''
+  riff_chunk_size = len(output) - 8 
+ # Divide the section size into four bytes, which we will write further in b.
+  q = riff_chunk_size
+  b = [] 
+  for i in range(4):
+      q, r = divmod(q, 256) # take the size of the section and return the quotient and the remainder of the division by 256, and so on 4 timesа 
+      b.append(r) # add each of the remainders to the list
+
+ # Change bytes from 4th to 7th on('\xff\xff\xff\xff') in output to b (like '\xc62\x02\x00')
+  riff = output[:4] + bytes(b) + output[8:]
+
+ # the io.BytesIO class will allow you to work with a sequence of bytes as a file object, and then read it as a wav file
+  sr, audio = wav_read(io.BytesIO(riff)) # extract the sample rate and the received signal
+
+  return audio, sr # the function will return the received signal and sample rate
+  audio, sr = get_audio()
+  scipy.io.wavfile.write('recording1.wav', sr, audio)
+  original = 'раз-два-три огонь вода снег солнце'
+res = recognizeAudio('recording1.wav', duration=None)
+
+print('Оригинал:               ', original)
+print('Результат распознавания:', res)
+print('WER:', wer(original.lower(), res.lower()))
+  def record():
+  audio,sr = get_audio()
+  scipy.io.wavfile.write('Jungle, Hello, expect')
+  scipy.io.wavfile.write('recording1.wav', sr, audio)
+  original = 'раз-два-три огонь вода снег солнце'
+  res = recognizeAudio('recording1.wav', duration=None)
+  return res
+print('Мой вывод через микро: ', original)
+print('Результат распознавания:', res)
+print('WER:', wer(original.lower(), res.lower()))
+
+  
