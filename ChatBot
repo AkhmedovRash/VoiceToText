@@ -1,3 +1,4 @@
+'''
 This code implements a chatbot model based on the Encoder-Decoder LSTM architecture. It loads the dialog file, pre-processes the data and prepares it for training the model. The model is then built and compiled with the chosen optimizer and loss function. The model is trained on inputs and outputs, and then inference models are created to use the model in inference mode. You can then ask questions and receive answers from the chatbot.
 The necessary modules and libraries are imported, including the file upload module, numpy, modules and classes from TensorFlow.keras for creating a neural network model, a module for working with YAML files, and a module for working with Google Drive.
 The drive.mount() function mounts Google Drive in order to access the files.
@@ -14,7 +15,7 @@ The model is trained on input and output data using the fit() function.
 Inference models are created to use the model in inference mode.
 The strToTokens() function converts a string into a sequence of tokens for input to the model.
 In a loop, you can ask questions and receive answers from the chatbot using inference models.
-можешь написать описание этого кода и дать ему названия?
+'''
 from google.colab import files # модуль для загрузки файлов в colab
 import numpy as np # библиотека для работы с массивами данных
 
