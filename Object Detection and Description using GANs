@@ -1,8 +1,5 @@
 '''
 This code is an implementation of a Generative Adversarial Network (GAN) based model for detecting objects and generating their descriptions based on the COCO dataset.
-
-The main steps in the code include:
-
 Loading the necessary libraries and modules.
 Loading and pre-processing COCO set data for the selected category of objects (for example, "dogs").
 Loading object detection model and descriptions from pretrained weights.
@@ -11,8 +8,6 @@ Building and training a generator (stage1_generator) and discriminator (stage1_d
 Create and train an adversarial model (adversarial_model) that combines a generator and a discriminator to train the generator to create realistic images and descriptions of objects.
 Generation of new images and descriptions using the trained GAN model.
 Additional features in the code include loading classes, embeddings, and filenames, as well as handling images and object bounding box data.
-
-Note: The described code is only a fragment and does not contain a complete implementation of all functions and details. 
 '''
 import os
 import pickle
